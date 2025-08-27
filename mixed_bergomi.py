@@ -1,13 +1,19 @@
+"""
+Mixed Bergomi models.
+"""
+
+import warnings
+from math import factorial
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from scipy.special import beta, hyp2f1, eval_hermitenorm, roots_hermite
+from scipy.integrate import IntegrationWarning, dblquad, quad
 from scipy.optimize import brentq, fsolve
-from scipy.integrate import dblquad, quad, IntegrationWarning
+from scipy.special import beta, eval_hermitenorm, hyp2f1
 from scipy.stats import norm
-from math import factorial
-import warnings
-import matplotlib.pyplot as plt
 
+from utils import plot_approx
 
 """
 --- Global Constants for Numerical Stability and Clarity ---
@@ -26,6 +32,7 @@ EPSILON = 1e-9
 """
 
 # --- Mixed Bergomi Model ---
+
 
 class MixedBergomi:
     """
@@ -63,7 +70,7 @@ class MixedBergomi:
 
         exp_term_T = 1 - np.exp(-2 * self.k * self.T)
         exp_term_Delta = 1 - np.exp(-2 * self.k * self.Delta)
-        common_factor = exp_term_T * exp_term_Delta / (8 * self.k ** 2 * self.Delta)
+        common_factor = exp_term_T * exp_term_Delta / (8 * self.k**2 * self.Delta)
 
         means = self.X0 - (np.array(self.omega) ** 2 * common_factor)
         return means[0], means[1]
@@ -75,7 +82,7 @@ class MixedBergomi:
 
         exp_term_T = 1 - np.exp(-2 * self.k * self.T)
         exp_term_Delta = (1 - np.exp(-self.k * self.Delta)) ** 2
-        common_factor = exp_term_T * exp_term_Delta / (2 * self.k ** 3 * self.Delta ** 2)
+        common_factor = exp_term_T * exp_term_Delta / (2 * self.k**3 * self.Delta**2)
 
         variances = np.array(self.omega) ** 2 * common_factor
         return variances[0], variances[1]
@@ -94,29 +101,48 @@ class MixedBergomi:
         exp_k_delta = 1 - np.exp(-self.k * self.Delta)
 
         # Intermediate terms derived from the model's covariance structure
-        term12 = -1 + self.k * self.Delta * (1 + np.exp(-2 * self.k * self.Delta)) / exp_2k_delta
-        term14 = (2 + self.k * self.Delta) * np.exp(-self.k * self.Delta) - 2 + self.k * self.Delta
-        term22 = (2 * self.k * self.Delta * (1 + np.exp(-self.k * self.Delta))
-                  + np.exp(-2 * self.k * self.Delta) * (2 * self.k * self.Delta + 3) - 3)
-        term32 = self.k * self.Delta - 2 + np.exp(-self.k * self.Delta) * (2 + self.k * self.Delta)
+        term12 = (
+            -1
+            + self.k
+            * self.Delta
+            * (1 + np.exp(-2 * self.k * self.Delta))
+            / exp_2k_delta
+        )
+        term14 = (
+            (2 + self.k * self.Delta) * np.exp(-self.k * self.Delta)
+            - 2
+            + self.k * self.Delta
+        )
+        term22 = (
+            2 * self.k * self.Delta * (1 + np.exp(-self.k * self.Delta))
+            + np.exp(-2 * self.k * self.Delta) * (2 * self.k * self.Delta + 3)
+            - 3
+        )
+        term32 = (
+            self.k * self.Delta
+            - 2
+            + np.exp(-self.k * self.Delta) * (2 + self.k * self.Delta)
+        )
 
         for j in range(len(self.omega)):
             omega_j2 = self.omega[j] ** 2
             omega_j4 = self.omega[j] ** 4
 
             # γ_1,j
-            term11 = omega_j4 / (128 * self.k ** 4 * self.Delta ** 2)
-            term13 = omega_j2 / (8 * self.k ** 3 * self.Delta ** 2)
-            gamma[0, j] = term11 * term12 * exp_2kT ** 2 * exp_2k_delta ** 2 + \
-                          term13 * term14 * exp_2kT * exp_k_delta
+            term11 = omega_j4 / (128 * self.k**4 * self.Delta**2)
+            term13 = omega_j2 / (8 * self.k**3 * self.Delta**2)
+            gamma[0, j] = (
+                term11 * term12 * exp_2kT**2 * exp_2k_delta**2
+                + term13 * term14 * exp_2kT * exp_k_delta
+            )
 
             # γ_2,j
-            term21 = omega_j4 / (48 * self.k ** 5 * self.Delta ** 3)
-            gamma[1, j] = -term21 * term22 * exp_2kT ** 2 * exp_k_delta ** 2
+            term21 = omega_j4 / (48 * self.k**5 * self.Delta**3)
+            gamma[1, j] = -term21 * term22 * exp_2kT**2 * exp_k_delta**2
 
             # γ_3,j
-            term31 = omega_j4 / (16 * self.k ** 6 * self.Delta ** 4)
-            gamma[2, j] = term31 * term32 * exp_2kT ** 2 * exp_k_delta ** 3
+            term31 = omega_j4 / (16 * self.k**6 * self.Delta**4)
+            gamma[2, j] = term31 * term32 * exp_2kT**2 * exp_k_delta**3
 
         return gamma
 
@@ -146,8 +172,8 @@ class MixedBergomi:
 
 # --- Mixed Bergomi Model ---
 
-class MixedRoughBergomi:
 
+class MixedRoughBergomi:
     """
     Implementation of the mixed rough Bergomi model.
 
@@ -182,7 +208,7 @@ class MixedRoughBergomi:
         """
 
         h_term = 2 * self.H + 1
-        num = (self.T + self.Delta) ** h_term - self.Delta ** h_term - self.T ** h_term
+        num = (self.T + self.Delta) ** h_term - self.Delta**h_term - self.T**h_term
         den = 4 * self.Delta * self.H * h_term
 
         means = self.X0 - (np.array(self.eta) ** 2 * num) / den
@@ -196,11 +222,19 @@ class MixedRoughBergomi:
         h_term1 = self.H + 0.5
         h_term2 = 2 * self.H + 2
 
-        term1 = (np.array(self.eta) ** 2) / (self.Delta ** 2 * h_term1 ** 2)
-        term2 = ((self.T + self.Delta) ** h_term2 - self.Delta ** h_term2 + self.T ** h_term2) / h_term2
+        term1 = (np.array(self.eta) ** 2) / (self.Delta**2 * h_term1**2)
+        term2 = (
+            (self.T + self.Delta) ** h_term2 - self.Delta**h_term2 + self.T**h_term2
+        ) / h_term2
         # The hypergeometric function arises from integrating the fractional kernel
         hyp_geo = hyp2f1(-h_term1, self.H + 1.5, self.H + 2.5, -self.T / self.Delta)
-        term3 = 2 * beta(1, self.H + 1.5) * (self.Delta ** h_term1) * (self.T ** (self.H + 1.5)) * hyp_geo
+        term3 = (
+            2
+            * beta(1, self.H + 1.5)
+            * (self.Delta**h_term1)
+            * (self.T ** (self.H + 1.5))
+            * hyp_geo
+        )
 
         variances = term1 * (term2 - term3)
         return variances[0], variances[1]
@@ -216,16 +250,20 @@ class MixedRoughBergomi:
                   Upper time(s) (must satisfy u > t).
         """
 
-        term1 = (self.T * t + self.Delta) ** (self.H + 0.5) - \
-                (self.T * t) ** (self.H + 0.5)
-        term2 = (self.T + self.Delta * u) ** (2 * self.H) - \
-                (self.Delta * u) ** (2 * self.H)
+        term1 = (self.T * t + self.Delta) ** (self.H + 0.5) - (self.T * t) ** (
+            self.H + 0.5
+        )
+        term2 = (self.T + self.Delta * u) ** (2 * self.H) - (self.Delta * u) ** (
+            2 * self.H
+        )
         term3 = (self.T * t + self.Delta * u) ** (self.H - 0.5)
         return term1 * term2 * term3
 
-    def Omega_gamma3(self, u):
+    def omega_gamma3(self, u):
         """
-        Compute the necessary function of the integrand necessary in the 'coefficients' calculation
+        Compute the necessary function of the integrand necessary in the 'coefficients'
+        calculation
+
         :param u: float or np.ndarray
                   Time(s).
         """
@@ -233,9 +271,14 @@ class MixedRoughBergomi:
         delta_ratio = self.Delta / self.T
 
         h_term = self.H + 0.5
-        term1 = ((1 - u) ** h_term) * (delta_ratio ** h_term) * beta(1, h_term)
+        term1 = ((1 - u) ** h_term) * (delta_ratio**h_term) * beta(1, h_term)
 
-        hyp1 = hyp2f1(-h_term, h_term, h_term + 1, -(1 + delta_ratio * u) / (delta_ratio * (1 - u)))
+        hyp1 = hyp2f1(
+            -h_term,
+            h_term,
+            h_term + 1,
+            -(1 + delta_ratio * u) / (delta_ratio * (1 - u)),
+        )
         term2 = ((1 + delta_ratio * u) ** h_term) * hyp1
 
         hyp2 = hyp2f1(-h_term, h_term, h_term + 1, -u / (1 - u))
@@ -255,7 +298,7 @@ class MixedRoughBergomi:
                   Upper time(s) (must satisfy u > t).
         """
 
-        omega_val = self.Omega_gamma3(u)
+        omega_val = self.omega_gamma3(u)
         delta_ratio = self.Delta / self.T
         term1 = (t + delta_ratio) ** (self.H + 0.5) - t ** (self.H + 0.5)
         term2 = (t + delta_ratio * u) ** (self.H - 0.5)
@@ -275,8 +318,12 @@ class MixedRoughBergomi:
 
         # BUG FIX: Wrap integrals in try-except to prevent crashes on non-convergence.
         try:
-            integral_gamma2 = dblquad(self.integrand_gamma2, 0, 1, lambda t: 0, lambda t: 1)[0]
-            integral_gamma3 = dblquad(self.integrand_gamma3, 0, 1, lambda t: 0, lambda t: 1)[0]
+            integral_gamma2 = dblquad(
+                self.integrand_gamma2, 0, 1, lambda t: 0, lambda t: 1
+            )[0]
+            integral_gamma3 = dblquad(
+                self.integrand_gamma3, 0, 1, lambda t: 0, lambda t: 1
+            )[0]
         except Exception as e:
             print(f"Warning: Integration for gamma coefficients failed: {e}")
             gamma[:] = np.nan  # Set all coefficients to NaN if integration fails
@@ -286,17 +333,27 @@ class MixedRoughBergomi:
             eta_j2 = self.eta[j] ** 2
             eta_j4 = self.eta[j] ** 4
 
-            term14 = (((self.T + self.Delta) ** h_term1 - self.Delta ** h_term1 - self.T ** h_term1)
-                      / (self.Delta * h_term1))
+            term14 = (
+                (self.T + self.Delta) ** h_term1 - self.Delta**h_term1 - self.T**h_term1
+            ) / (self.Delta * h_term1)
 
             # γ_1,j
-            term11 = (((self.T + self.Delta) ** h_term2 + self.Delta ** h_term2 - self.T ** h_term2)
-                      / (self.Delta * h_term2))
+            term11 = (
+                (self.T + self.Delta) ** h_term2 + self.Delta**h_term2 - self.T**h_term2
+            ) / (self.Delta * h_term2)
             hyp11 = hyp2f1(-2 * self.H, h_term1, 2 * self.H + 2, -self.Delta / self.T)
-            term15 = (2 * beta(1, h_term1) * (self.Delta ** (2 * self.H))
-                      * (self.T ** (2 * self.H)) * hyp11)
-            gamma[0, j] = ((eta_j4 / (32 * self.H ** 2)) * (term11 - term14 ** 2 - term15) +
-                           (eta_j2 * term14) / (4 * self.H) - sigma_sq[j] / 2)
+            term15 = (
+                2
+                * beta(1, h_term1)
+                * (self.Delta ** (2 * self.H))
+                * (self.T ** (2 * self.H))
+                * hyp11
+            )
+            gamma[0, j] = (
+                (eta_j4 / (32 * self.H**2)) * (term11 - term14**2 - term15)
+                + (eta_j2 * term14) / (4 * self.H)
+                - sigma_sq[j] / 2
+            )
 
             # γ_2,j
             term21 = -(eta_j4 * self.T) / (2 * self.Delta * self.H * h_term1)
@@ -304,7 +361,9 @@ class MixedRoughBergomi:
             gamma[1, j] = term21 * integral_gamma2 + term23
 
             # γ_3,j
-            term31 = (eta_j4 * self.T ** (4 * self.H + 2)) / (2 * self.Delta ** 2 * (self.H + 0.5) ** 2)
+            term31 = (eta_j4 * self.T ** (4 * self.H + 2)) / (
+                2 * self.Delta**2 * (self.H + 0.5) ** 2
+            )
             gamma[2, j] = term31 * integral_gamma3 - sigma_sq[j] ** 2 / 2
 
         return gamma
@@ -337,114 +396,6 @@ class MixedRoughBergomi:
 --- Pricing Approximation Methods ---
 """
 
-# --- One Dimensional Gauss-Hermite Quadrature Method---
-
-def gauss_hermite_approx(N_gauss, kappa, model, p):
-    """
-    Compute the VIX derivative price using one dimensional Gauss-Hermite quadrature method.
-
-    :param N_gauss: int
-                    Number of nodes for the Gauss-Hermite quadrature.
-    :param kappa: float
-                  The strike price of the VIX call/put.
-    :param model: The instance of a Bergomi model, mixed Bergomi model or mixed rough Bergomi model.
-    :param p: int
-              The payoff type: 1 for calls,
-                               0 for futures,
-                               others for puts.
-    """
-
-    mu1, mu2 = model.mean()
-    sigma1, sigma2 = np.sqrt(model.variance())
-    lam = model.lam
-    X0 = model.X0
-    T = model.T
-    Delta = model.Delta
-
-    nodes, weights = roots_hermite(N_gauss)
-
-    # Change of variable: let z = sqrt(2)*x so that the expectation becomes
-    # E[f(Z)] = 1/sqrt(pi) * \int_{-\infty}^{\infty} f(sqrt(2)*x) e^{-x^2} dx.
-    z = np.sqrt(2) * nodes
-    weights_trans = weights / np.sqrt(np.pi)
-
-    F = lam * np.exp(mu1 + sigma1 * z) + (1 - lam) * np.exp(mu2 + sigma2 * z)
-
-    if p == 1:
-        payoff = np.maximum(np.sqrt(F) - kappa, 0)
-    elif p == 0:
-        payoff = np.sqrt(F)
-    else:
-        payoff = np.maximum(kappa - np.sqrt(F), 0)
-
-    # The main term in the weak VIX derivative price approximation
-    main = np.sum(weights_trans * payoff)
-
-    # First order derivative of the payoff function
-    def payoff_func(x):
-        if p == 1:
-            return np.where(x > kappa ** 2, 1 / (2 * np.sqrt(x)), 0)
-        elif p == 0:
-            return 1 / (2 * np.sqrt(x))
-        else:
-            return np.where(x < kappa ** 2, -1 / (2 * np.sqrt(x)), 0)
-
-    # If the input instance is the mixed rough Bergomi model
-    if isinstance(model, MixedRoughBergomi):
-        vol1, vol2 = model.eta
-        H = model.H
-        term0 = 2 * H + 1
-        term1 = (T + Delta) ** term0 - Delta ** term0 - T ** term0
-        term2 = 2 * Delta * H * term0
-        integral = term1 / term2
-    else:
-        vol1, vol2 = model.omega
-        k = model.k
-        term1 = 1/(4 * k ** 2 * Delta)
-        term2 = 1 - np.exp(-2 * k * T)
-        term3 = 1 - np.exp(-2 * k * Delta)
-        integral = term1 * term2 * term3
-
-    term01 = lam * np.exp(mu1 + sigma1 * z)
-    if vol1 == 0:
-        term11 = (1 - lam) * np.exp(mu2 + sigma2 * z)
-    else:
-        term11 = (1 - lam) * np.exp(vol2 / 2 * (vol1 - vol2) * integral
-                                    + (1 - vol2 / vol1) * X0 + vol2 / vol1 * (mu1 + sigma1 * z))
-    psi1 = payoff_func(term01 + term11) * term01
-
-    if vol2 == 0:
-        term02 = lam * np.exp(mu1 + sigma1 * z)
-    else:
-        term02 = lam * np.exp(vol1 / 2 * (vol2 - vol1) * integral + (1 - vol1 / vol2) * X0 + vol1 / vol2 * (mu2 + sigma2 * z))
-    term12 = (1 - lam) * np.exp(mu2 + sigma2 * z)
-    psi2 = payoff_func(term02 + term12) * term12
-
-    # Correction terms Pi,1
-    p1 = np.zeros(3)
-
-    p1[0] = np.sum(weights_trans * psi1)
-    p1[1] = 1 / sigma1 * np.sum(weights_trans * z * psi1)
-    p1[2] = 1 / sigma1 ** 2 * np.sum(weights_trans * (z ** 2 - 1) * psi1)
-
-    # Correction terms Pi,2
-    p2 = np.zeros(3)
-
-    p2[0] = np.sum(weights_trans * psi2)
-    p2[1] = 1 / sigma2 * np.sum(weights_trans * z * psi2)
-    p2[2] = 1 / sigma2 ** 2 * np.sum(weights_trans * (z ** 2 - 1) * psi2)
-
-    gamma = model.coefficients()
-
-    if vol1 == 0:
-        price = main + np.sum(gamma[:, 1] * p2)
-    elif vol2 == 0:
-        price = main + np.sum(gamma[:, 0] * p1)
-    else:
-        price = main + np.sum(gamma[:, 0] * p1) + np.sum(gamma[:, 1] * p2)
-
-    return price
-
 
 # --- Hermite Polynomial Expansion Method---
 class HermiteApproximation:
@@ -454,8 +405,9 @@ class HermiteApproximation:
     Parameters
     ----------
     kappa : float
-            The strike price of the VIX calls/puts.
-    model: The instance of a Bergomi model, either mixed Bergomi model or mixed rough Bergomi model.
+        The strike price of the VIX calls/puts.
+    model: The instance of a Bergomi model, either mixed Bergomi model or
+        mixed rough Bergomi model.
     p: int
        The payoff type: 1 for calls,
                         0 for futures,
@@ -495,11 +447,8 @@ class HermiteApproximation:
         is_scalar = np.isscalar(y)
         y_arr = np.asarray(y, dtype=float)
 
-        if n == 0:
-            res_arr = np.ones_like(y_arr)
-        else:
-            # eval_hermitenorm handles both scalar and array inputs
-            res_arr = eval_hermitenorm(n, y_arr)
+        # eval_hermitenorm handles both scalar and array inputs
+        res_arr = np.ones_like(y_arr) if n == 0 else eval_hermitenorm(n, y_arr)
 
         return res_arr.item() if is_scalar else res_arr
 
@@ -561,8 +510,8 @@ class HermiteApproximation:
 
     def func_g1(self, y):
         """
-        Compute the first-order partial derivative of g (y) with respect to the mean of each process
-        in the mixed Bergomi model or mixed rough Bergomi model.
+        Compute the first-order partial derivative of g (y) with respect to the mean
+        of each process in the mixed Bergomi model or mixed rough Bergomi model.
 
         :param y: float or np.ndarray
                   Input value(s) for y.
@@ -590,11 +539,15 @@ class HermiteApproximation:
 
             # Calculate in log-space to prevent overflow
             log_numerator = np.log(0.5 * self.b) + v_clipped_arg
-            log_denominator = 0.5 * np.log1p(v_b_exp_val)  # Use log1p for precision: log(1+x)
+            log_denominator = 0.5 * np.log1p(
+                v_b_exp_val
+            )  # Use log1p for precision: log(1+x)
 
             # Combine logs and exponential back
             log_g1 = log_numerator - log_denominator
-            g1_val[valid_mask] = np.exp(np.clip(log_g1, EXP_LOWER_BOUND, EXP_UPPER_BOUND))
+            g1_val[valid_mask] = np.exp(
+                np.clip(log_g1, EXP_LOWER_BOUND, EXP_UPPER_BOUND)
+            )
 
         if self.sigma1 <= self.sigma2:
             return -g1_val.item() if is_scalar else -g1_val
@@ -603,8 +556,8 @@ class HermiteApproximation:
 
     def func_g2(self, y):
         """
-        Compute the second-order partial derivative of g (y) with respect to the mean of each process
-        in the mixed Bergomi model or mixed rough Bergomi model.
+        Compute the second-order partial derivative of g (y) with respect to the mean
+        of each process in the mixed Bergomi model or mixed rough Bergomi model.
         Using a numerically stable log-space computation to prevent overflow.
 
         :param y: float or np.ndarray
@@ -632,19 +585,25 @@ class HermiteApproximation:
             v_clipped_arg = clipped_arg_exp_g[valid_mask]
 
             # Calculate in log-space to prevent overflow
-            log_numerator = np.log(0.25 * self.b) + v_clipped_arg + np.log(2 + v_b_exp_val)
-            log_denominator = 1.5 * np.log1p(v_b_exp_val)  # Use log1p for precision: log(1+x)
+            log_numerator = (
+                np.log(0.25 * self.b) + v_clipped_arg + np.log(2 + v_b_exp_val)
+            )
+            log_denominator = 1.5 * np.log1p(
+                v_b_exp_val
+            )  # Use log1p for precision: log(1+x)
 
             # Combine logs and exponential back
             log_g2 = log_numerator - log_denominator
-            g2_val[valid_mask] = np.exp(np.clip(log_g2, EXP_LOWER_BOUND, EXP_UPPER_BOUND))
+            g2_val[valid_mask] = np.exp(
+                np.clip(log_g2, EXP_LOWER_BOUND, EXP_UPPER_BOUND)
+            )
 
         return g2_val.item() if is_scalar else g2_val
 
     def func_g3(self, y):
         """
-        Compute the third-order partial derivative of g (y) with respect to the mean of each process
-        in the mixed Bergomi model or mixed rough Bergomi model.
+        Compute the third-order partial derivative of g (y) with respect to the mean
+        of each process in the mixed Bergomi model or mixed rough Bergomi model.
         Using a numerically stable log-space computation to prevent overflow.
 
         :param y: float or np.ndarray
@@ -688,7 +647,7 @@ class HermiteApproximation:
             # This avoids the 1/x overflow.
             if np.any(small_x_mask):
                 x_small = x[small_x_mask]
-                log_of_num_term[small_x_mask] = np.log(4 + 2 * x_small + x_small ** 2)
+                log_of_num_term[small_x_mask] = np.log(4 + 2 * x_small + x_small**2)
 
             # Case 2: x is very large. Use the factorization to avoid x**2 overflow.
             if np.any(large_x_mask):
@@ -707,7 +666,9 @@ class HermiteApproximation:
 
             # Combine logs and exponential back
             log_g3 = log_numerator - log_denominator
-            g3_val[valid_mask] = np.exp(np.clip(log_g3, EXP_LOWER_BOUND, EXP_UPPER_BOUND))
+            g3_val[valid_mask] = np.exp(
+                np.clip(log_g3, EXP_LOWER_BOUND, EXP_UPPER_BOUND)
+            )
 
         if self.sigma1 <= self.sigma2:
             return -g3_val.item() if is_scalar else -g3_val
@@ -725,7 +686,8 @@ class HermiteApproximation:
                         (e.g., self.func_g, self.func_g1).
         """
 
-        integrand = lambda y: func_g_(y) * self.hermite_phi_product(n, y)
+        def integrand(y):
+            return func_g_(y) * self.hermite_phi_product(n, y)
 
         integral = np.nan
         err = np.inf
@@ -734,25 +696,63 @@ class HermiteApproximation:
             # First attempt: integrate over the full range
             with warnings.catch_warnings(record=True) as w:
                 warnings.simplefilter("always", IntegrationWarning)
-                integral, err = quad(integrand, -np.inf, np.inf, limit=50000, epsabs=EPSILON, epsrel=EPSILON)
+                integral, err = quad(
+                    integrand,
+                    -np.inf,
+                    np.inf,
+                    limit=50000,
+                    epsabs=EPSILON,
+                    epsrel=EPSILON,
+                )
 
             # If the first attempt raised a warning, split at 0
             if w:
                 print("Initial integration warned. Splitting at 0.")
                 with warnings.catch_warnings(record=True) as w2:
                     warnings.simplefilter("always", IntegrationWarning)
-                    integral1, err1 = quad(integrand, -np.inf, 0, limit=50000, epsabs=EPSILON, epsrel=EPSILON)
-                    integral2, err2 = quad(integrand, 0, np.inf, limit=50000, epsabs=EPSILON, epsrel=EPSILON)
+                    integral1, err1 = quad(
+                        integrand,
+                        -np.inf,
+                        0,
+                        limit=50000,
+                        epsabs=EPSILON,
+                        epsrel=EPSILON,
+                    )
+                    integral2, err2 = quad(
+                        integrand,
+                        0,
+                        np.inf,
+                        limit=50000,
+                        epsabs=EPSILON,
+                        epsrel=EPSILON,
+                    )
                     integral = integral1 + integral2
                     err = err1 + err2
 
                 # If splitting at 0 ALSO warned, split the negative part at -10
                 if w2:
                     print("Second integration warned. Splitting at -10.")
-                    # Note: No need for another warning catch here unless you have further nesting
-                    integral1, err1 = quad(integrand, -np.inf, -10, limit=50000, epsabs=EPSILON, epsrel=EPSILON)
-                    integral2, err2 = quad(integrand, -10, 0, limit=50000, epsabs=EPSILON, epsrel=EPSILON)
-                    integral3, err3 = quad(integrand, 0, np.inf, limit=50000, epsabs=EPSILON, epsrel=EPSILON)
+                    # Note: No need for another warning catch here unless you have
+                    # further nesting
+                    integral1, err1 = quad(
+                        integrand,
+                        -np.inf,
+                        -10,
+                        limit=50000,
+                        epsabs=EPSILON,
+                        epsrel=EPSILON,
+                    )
+                    integral2, err2 = quad(
+                        integrand, -10, 0, limit=50000, epsabs=EPSILON, epsrel=EPSILON
+                    )
+                    integral3, err3 = quad(
+                        integrand,
+                        0,
+                        np.inf,
+                        limit=50000,
+                        epsabs=EPSILON,
+                        epsrel=EPSILON,
+                    )
                     integral = integral1 + integral2 + integral3
                     err = err1 + err2 + err3
 
@@ -761,7 +761,10 @@ class HermiteApproximation:
                 pass  # Warning about high integration error
 
         except Exception as e:
-            print(f"Warning: Integration failed for n={n} with function {func_g_.__name__}. Error: {e}")
+            print(
+                f"Warning: Integration failed for n={n} "
+                f"with function {func_g_.__name__}. Error: {e}"
+            )
             integral = np.nan
 
         return integral / float(factorial(n))
@@ -784,12 +787,15 @@ class HermiteApproximation:
         g_approx = np.zeros_like(y_arr, dtype=float)
 
         if w is None:
-            weights = w or [self.weight_calculation(i, self.func_g(y_arr)) for i in range(N + 1)]
+            weights = w or [
+                self.weight_calculation(i, self.func_g(y_arr)) for i in range(N + 1)
+            ]
         elif len(w) != N + 1:
-            raise ValueError(f"Provided weights length {len(w)} doesn't match N+1 ({N + 1})")
+            raise ValueError(
+                f"Provided weights length {len(w)} doesn't match N+1 ({N + 1})"
+            )
         else:
             weights = w
-
 
         for n, weight in enumerate(weights):
             if not np.isnan(weight):
@@ -800,15 +806,16 @@ class HermiteApproximation:
 
     def d1_finding(self):
         """
-        Find the value of d1 in the Black-Scholes price function, which is defined as 'A' in the paper.
-        Use Brent's method or fsolve for the objective function.
+        Find the value of d1 in the Black-Scholes price function, which is defined
+        as 'A' in the paper. Use Brent's method or fsolve for the objective function.
         """
 
-        # Function F(x) = lambda * exp(mu1 + sigma1*x) + (1-lambda) * exp(mu2 + sigma2*x) - kappa^2
+        # Function F(x) = lambda * exp(mu1 + sigma1*x)
+        # + (1-lambda) * exp(mu2 + sigma2*x) - kappa^2
         def objective(x):
             term1 = self.lam * np.exp(self.mu1 + self.sigma1 * x)
             term2 = (1 - self.lam) * np.exp(self.mu2 + self.sigma2 * x)
-            return term1 + term2 - self.kappa ** 2
+            return term1 + term2 - self.kappa**2
 
         try:
             # Use brentq for robust root finding within a bracketing interval
@@ -816,7 +823,10 @@ class HermiteApproximation:
             return d1
         except ValueError:
             # Fallback to fsolve if brentq fails (e.g., no sign change in interval)
-            print("Warning: brentq failed, falling back to fsolve. Consider adjusting brentq interval.")
+            print(
+                "Warning: brentq failed, falling back to fsolve. Consider "
+                "adjusting brentq interval."
+            )
             d1 = fsolve(objective, 0)[0]  # Initial guess at 0
             return d1
         except Exception as e:
@@ -833,10 +843,7 @@ class HermiteApproximation:
 
         A = self.d1_finding()
 
-        if self.sigma1 < self.sigma2:
-            B = A - self.sigma1 / 2
-        else:
-            B = A - self.sigma2 / 2
+        B = A - self.sigma1 / 2 if self.sigma1 < self.sigma2 else A - self.sigma2 / 2
 
         if self.p == 1:
             if len(weights) == 1:
@@ -845,7 +852,7 @@ class HermiteApproximation:
                 h = np.zeros_like(weights)
                 h[0] = norm.cdf(-B)
                 for i in range(1, len(weights)):
-                    h[i] = self.hermite_phi_product(i-1, B)
+                    h[i] = self.hermite_phi_product(i - 1, B)
         elif self.p == 0:
             h = np.ones_like(weights)
         else:
@@ -855,7 +862,7 @@ class HermiteApproximation:
                 h = np.zeros_like(weights)
                 h[0] = norm.cdf(B)
                 for i in range(1, len(weights)):
-                    h[i] = - self.hermite_phi_product(i-1, B)
+                    h[i] = -self.hermite_phi_product(i - 1, B)
 
         integral = weights * h
 
@@ -869,42 +876,80 @@ class HermiteApproximation:
         c = np.zeros(4)
 
         if self.sigma1 < self.sigma2:
-            a = self.lam ** 0.5 * np.exp(self.mu1 / 2 + self.var1 / 8)
-            c[0] = 1 + 0.5 * self.gamma[0, 0] + 0.25 * self.gamma[1, 0] + 0.125 * self.gamma[2, 0]
-            c[1] = self.gamma[0, 0] - self.gamma[0, 1] + \
-                 self.gamma[1, 0] * (1 - 0.5 * self.sigma2 / self.sigma1) - \
-                 self.gamma[1, 1] * 0.5 * self.sigma1 / self.sigma2 + \
-                 self.gamma[2, 0] * (3 / 4 - 0.5 * self.sigma2 / self.sigma1) - \
-                 self.gamma[2, 1] * 0.25 * self.sigma1 ** 2 / self.sigma2 ** 2
-            c[2] = self.gamma[1, 0] * (1 - self.sigma2 / self.sigma1) + \
-                 self.gamma[1, 1] * (1 - self.sigma1 / self.sigma2) + \
-                 self.gamma[2, 0] * (1.5 - 2 * self.sigma2 / self.sigma1 + 0.5 * self.sigma2 ** 2 / self.sigma1 ** 2) + \
-                 self.gamma[2, 1] * (self.sigma1 / self.sigma2 - self.sigma1 ** 2 / self.sigma2 ** 2)
-            c[3] = self.gamma[2, 0] * (1 - 2 * self.sigma2 / self.sigma1 + self.sigma2 ** 2 / self.sigma1 ** 2) - \
-                 self.gamma[2, 1] * (1 - 2 * self.sigma1 / self.sigma2 + self.sigma1 ** 2 / self.sigma2 ** 2)
+            a = self.lam**0.5 * np.exp(self.mu1 / 2 + self.var1 / 8)
+            c[0] = (
+                1
+                + 0.5 * self.gamma[0, 0]
+                + 0.25 * self.gamma[1, 0]
+                + 0.125 * self.gamma[2, 0]
+            )
+            c[1] = (
+                self.gamma[0, 0]
+                - self.gamma[0, 1]
+                + self.gamma[1, 0] * (1 - 0.5 * self.sigma2 / self.sigma1)
+                - self.gamma[1, 1] * 0.5 * self.sigma1 / self.sigma2
+                + self.gamma[2, 0] * (3 / 4 - 0.5 * self.sigma2 / self.sigma1)
+                - self.gamma[2, 1] * 0.25 * self.sigma1**2 / self.sigma2**2
+            )
+            c[2] = (
+                self.gamma[1, 0] * (1 - self.sigma2 / self.sigma1)
+                + self.gamma[1, 1] * (1 - self.sigma1 / self.sigma2)
+                + self.gamma[2, 0]
+                * (
+                    1.5
+                    - 2 * self.sigma2 / self.sigma1
+                    + 0.5 * self.sigma2**2 / self.sigma1**2
+                )
+                + self.gamma[2, 1]
+                * (self.sigma1 / self.sigma2 - self.sigma1**2 / self.sigma2**2)
+            )
+            c[3] = self.gamma[2, 0] * (
+                1 - 2 * self.sigma2 / self.sigma1 + self.sigma2**2 / self.sigma1**2
+            ) - self.gamma[2, 1] * (
+                1 - 2 * self.sigma1 / self.sigma2 + self.sigma1**2 / self.sigma2**2
+            )
         else:
             a = (1 - self.lam) ** 0.5 * np.exp(self.mu2 / 2 + self.var2 / 8)
-            c[0] = 1 + 0.5 * self.gamma[0, 1] + 0.25 * self.gamma[1, 1] + 0.125 * self.gamma[2, 1]
-            c[1] = self.gamma[0, 0] - self.gamma[0, 1] + \
-                 self.gamma[1, 0] * 0.5 * self.sigma2 / self.sigma1 - \
-                 self.gamma[1, 1] * (1 - 0.5 * self.sigma1 / self.sigma2) + \
-                 self.gamma[2, 0] * 0.25 * self.sigma2 ** 2 / self.sigma1 ** 2 - \
-                 self.gamma[2, 1] * (3 / 4 - 0.5 * self.sigma1 / self.sigma2)
-            c[2] = self.gamma[1, 0] * (1 - self.sigma2 / self.sigma1) + \
-                 self.gamma[1, 1] * (1 - self.sigma1 / self.sigma2) + \
-                 self.gamma[2, 0] * (self.sigma2 / self.sigma1 - self.sigma2 ** 2 / self.sigma1 ** 2) + \
-                 self.gamma[2, 1] * (1.5 - 2 * self.sigma1 / self.sigma2 + 0.5 * self.sigma1 ** 2 / self.sigma2 ** 2)
-            c[3] = self.gamma[2, 0] * (1 - 2 * self.sigma2 / self.sigma1 + self.sigma2 ** 2 / self.sigma1 ** 2) - \
-                 self.gamma[2, 1] * (1 - 2 * self.sigma1 / self.sigma2 + self.sigma1 ** 2 / self.sigma2 ** 2)
+            c[0] = (
+                1
+                + 0.5 * self.gamma[0, 1]
+                + 0.25 * self.gamma[1, 1]
+                + 0.125 * self.gamma[2, 1]
+            )
+            c[1] = (
+                self.gamma[0, 0]
+                - self.gamma[0, 1]
+                + self.gamma[1, 0] * 0.5 * self.sigma2 / self.sigma1
+                - self.gamma[1, 1] * (1 - 0.5 * self.sigma1 / self.sigma2)
+                + self.gamma[2, 0] * 0.25 * self.sigma2**2 / self.sigma1**2
+                - self.gamma[2, 1] * (3 / 4 - 0.5 * self.sigma1 / self.sigma2)
+            )
+            c[2] = (
+                self.gamma[1, 0] * (1 - self.sigma2 / self.sigma1)
+                + self.gamma[1, 1] * (1 - self.sigma1 / self.sigma2)
+                + self.gamma[2, 0]
+                * (self.sigma2 / self.sigma1 - self.sigma2**2 / self.sigma1**2)
+                + self.gamma[2, 1]
+                * (
+                    1.5
+                    - 2 * self.sigma1 / self.sigma2
+                    + 0.5 * self.sigma1**2 / self.sigma2**2
+                )
+            )
+            c[3] = self.gamma[2, 0] * (
+                1 - 2 * self.sigma2 / self.sigma1 + self.sigma2**2 / self.sigma1**2
+            ) - self.gamma[2, 1] * (
+                1 - 2 * self.sigma1 / self.sigma2 + self.sigma1**2 / self.sigma2**2
+            )
 
         return c * a
-
 
     def vix_derivative_price(self, best_N):
         """
         Compute the VIX derivative price using the Hermite expansion.
         :param best_N: int
-                       The optimal order N for the Hermite approximation to use for call/put options.
+                       The optimal order N for the Hermite approximation to use
+                       for call/put options.
                        For futures (p=0), this will be overridden to 0.
         """
 
@@ -914,15 +959,27 @@ class HermiteApproximation:
         # If p=0 (futures), optimal order is 0. Otherwise, use the provided best_N_star.
         effective_N = 0 if self.p == 0 else best_N
 
-        # Pre-calculate weights for all approximation functions using the effective_N_star
+        # Pre-calculate weights for all approximation functions using
+        # the effective_N_star
         weights = np.zeros((4, effective_N + 1))
-        weights[0] = [self.weight_calculation(n, self.func_g) for n in range(effective_N + 1)]
-        weights[1] = [self.weight_calculation(n, self.func_g1) for n in range(effective_N + 1)]
-        weights[2] = [self.weight_calculation(n, self.func_g2) for n in range(effective_N + 1)]
-        weights[3] = [self.weight_calculation(n, self.func_g3) for n in range(effective_N + 1)]
+        weights[0] = [
+            self.weight_calculation(n, self.func_g) for n in range(effective_N + 1)
+        ]
+        weights[1] = [
+            self.weight_calculation(n, self.func_g1) for n in range(effective_N + 1)
+        ]
+        weights[2] = [
+            self.weight_calculation(n, self.func_g2) for n in range(effective_N + 1)
+        ]
+        weights[3] = [
+            self.weight_calculation(n, self.func_g3) for n in range(effective_N + 1)
+        ]
 
-        # Calculate I_N, I_1N, I_2N, I_3N using the pre-calculated weights and effective_N_star
-        integral_N = np.array([np.sum(self.calculate_I_N(weights[i])) for i in range(4)])
+        # Calculate I_N, I_1N, I_2N, I_3N using the pre-calculated weights and
+        # effective_N_star
+        integral_N = np.array(
+            [np.sum(self.calculate_I_N(weights[i])) for i in range(4)]
+        )
 
         c = self.coefficients()
 
@@ -940,7 +997,8 @@ class HermiteApproximation:
         """
         Compute the implied volatility using the Taylor's theorem.
         :param best_N: int
-                       The optimal order N for the Hermite approximation to use for call/put options.
+                       The optimal order N for the Hermite approximation to use
+                       for call/put options.
         :param type: int
                      The expansion type: 1 for Method 1,
                                          2 for Method 2,
@@ -950,22 +1008,32 @@ class HermiteApproximation:
         A = self.d1_finding()
 
         weights = np.zeros((4, best_N + 1))
-        weights[0] = [self.weight_calculation(n, self.func_g) for n in range(best_N + 1)]
-        weights[1] = [self.weight_calculation(n, self.func_g1) for n in range(best_N + 1)]
-        weights[2] = [self.weight_calculation(n, self.func_g2) for n in range(best_N + 1)]
-        weights[3] = [self.weight_calculation(n, self.func_g3) for n in range(best_N + 1)]
+        weights[0] = [
+            self.weight_calculation(n, self.func_g) for n in range(best_N + 1)
+        ]
+        weights[1] = [
+            self.weight_calculation(n, self.func_g1) for n in range(best_N + 1)
+        ]
+        weights[2] = [
+            self.weight_calculation(n, self.func_g2) for n in range(best_N + 1)
+        ]
+        weights[3] = [
+            self.weight_calculation(n, self.func_g3) for n in range(best_N + 1)
+        ]
 
         integral_N = np.array([self.calculate_I_N(weights[i]) for i in range(4)])
 
         c = self.coefficients()
 
-        coeff_pdf = sum(ci * sum(li[1:]) for ci, li in zip(c, integral_N))
+        coeff_pdf = sum(ci * sum(li[1:]) for ci, li in zip(c, integral_N, strict=False))
 
         if self.sigma1 < self.sigma2:
             B = A - self.sigma1 / 2
             # a = self.lam ** 0.5 * np.exp(self.mu1 / 2 + self.var1 / 8)
             # f = a * integral_N[0, 0] / norm.cdf(-B)
-            f = sum(ci * li[0] for ci, li in zip(c, integral_N)) / norm.cdf(-B)
+            f = sum(
+                ci * li[0] for ci, li in zip(c, integral_N, strict=False)
+            ) / norm.cdf(-B)
             if type == 1:
                 k = np.log(self.kappa)
                 x0 = k - A * self.sigma1 / 2 + self.var1 / 8
@@ -977,27 +1045,34 @@ class HermiteApproximation:
                     iv0 = 0.5 * self.sigma1 / np.sqrt(self.T)
                 else:
                     k = np.log(self.kappa)
-                    if (B ** 2 - 2 * (x0 - k)) >= 0:
-                        iv01 = (-B + np.sqrt(B ** 2 - 2 * (x0 - k))) / np.sqrt(self.T)
-                        iv02 = (-B - np.sqrt(B ** 2 - 2 * (x0 - k))) / np.sqrt(self.T)
+                    if (B**2 - 2 * (x0 - k)) >= 0:
+                        iv01 = (-B + np.sqrt(B**2 - 2 * (x0 - k))) / np.sqrt(self.T)
+                        iv02 = (-B - np.sqrt(B**2 - 2 * (x0 - k))) / np.sqrt(self.T)
                         conditions = [
                             (iv01 < 0) & (iv02 < 0),
                             (iv01 >= 0) & (iv02 < 0),
-                            (iv01 < 0) & (iv02 >= 0)
+                            (iv01 < 0) & (iv02 >= 0),
                         ]
                         choices = [np.nan, iv01, iv02]
                         iv0 = np.select(conditions, choices, np.minimum(iv01, iv02))
                         if np.isnan(iv0):
-                            raise ValueError("The zeroth-order implied volatility is less than 0"
-                                             ", this method is not applicable.")
+                            raise ValueError(
+                                "The zeroth-order implied volatility is less than 0"
+                                ", this method is not applicable."
+                            )
                     else:
-                        raise ValueError("The discriminant is less than 0, this method is not applicable.")
+                        raise ValueError(
+                            "The discriminant is less than 0, this method is not "
+                            "applicable."
+                        )
 
         else:
             B = A - self.sigma2 / 2
             # a = (1 - self.lam) ** 0.5 * np.exp(self.mu2 / 2 + self.var2 / 8)
             # f = a * integral_N[0, 0] / norm.cdf(-B)
-            f = sum(ci * li[0] for ci, li in zip(c, integral_N)) / norm.cdf(-B)
+            f = sum(
+                ci * li[0] for ci, li in zip(c, integral_N, strict=False)
+            ) / norm.cdf(-B)
             if type == 1:
                 k = np.log(self.kappa)
                 iv0 = 0.5 * self.sigma2 / np.sqrt(self.T)
@@ -1009,21 +1084,26 @@ class HermiteApproximation:
                     iv0 = 0.5 * self.sigma2 / np.sqrt(self.T)
                 else:
                     k = np.log(self.kappa)
-                    if (B ** 2 - 2 * (x0 - k)) >= 0:
-                        iv01 = (-B + np.sqrt(B ** 2 - 2 * (x0 - k))) / np.sqrt(self.T)
-                        iv02 = (-B - np.sqrt(B ** 2 - 2 * (x0 - k))) / np.sqrt(self.T)
+                    if (B**2 - 2 * (x0 - k)) >= 0:
+                        iv01 = (-B + np.sqrt(B**2 - 2 * (x0 - k))) / np.sqrt(self.T)
+                        iv02 = (-B - np.sqrt(B**2 - 2 * (x0 - k))) / np.sqrt(self.T)
                         conditions = [
                             (iv01 < 0) & (iv02 < 0),
                             (iv01 >= 0) & (iv02 < 0),
-                            (iv01 < 0) & (iv02 >= 0)
+                            (iv01 < 0) & (iv02 >= 0),
                         ]
                         choices = [np.nan, iv01, iv02]
                         iv0 = np.select(conditions, choices, np.minimum(iv01, iv02))
                         if np.isnan(iv0):
-                            raise ValueError("The zeroth-order implied volatility is less than 0"
-                                             ", this method is not applicable.")
+                            raise ValueError(
+                                "The zeroth-order implied volatility is less than 0"
+                                ", this method is not applicable."
+                            )
                     else:
-                        raise ValueError("The discriminant is less than 0, this method is not applicable.")
+                        raise ValueError(
+                            "The discriminant is less than 0, this method is "
+                            "not applicable."
+                        )
 
         vega = np.exp(x0) * np.sqrt(self.T) * norm.pdf(B)
 
@@ -1032,7 +1112,9 @@ class HermiteApproximation:
         elif type == 2:
             extra_term = (np.exp(k) - self.kappa) * norm.cdf(-A)
         else:
-            extra_term = self.kappa * (norm.cdf(-B - iv0 * np.sqrt(self.T)) - norm.cdf(-A))
+            extra_term = self.kappa * (
+                norm.cdf(-B - iv0 * np.sqrt(self.T)) - norm.cdf(-A)
+            )
 
         iv1 = coeff_pdf / vega
         iv2 = extra_term / vega
@@ -1046,7 +1128,8 @@ class HermiteApproximation:
         """
         Compute the implied volatility using the Taylor's theorem.
         :param best_N: int
-                       The optimal order N for the Hermite approximation to use for call/put options.
+                       The optimal order N for the Hermite approximation to use
+                       for call/put options.
         :param type: int
                      The expansion type: 1 for Method 1,
                                          2 for Method 2,
@@ -1056,17 +1139,24 @@ class HermiteApproximation:
         A = self.d1_finding()
 
         weights = np.zeros((4, best_N + 1))
-        weights[0] = [self.weight_calculation(n, self.func_g) for n in range(best_N + 1)]
-        weights[1] = [self.weight_calculation(n, self.func_g1) for n in range(best_N + 1)]
-        weights[2] = [self.weight_calculation(n, self.func_g2) for n in range(best_N + 1)]
-        weights[3] = [self.weight_calculation(n, self.func_g3) for n in range(best_N + 1)]
+        weights[0] = [
+            self.weight_calculation(n, self.func_g) for n in range(best_N + 1)
+        ]
+        weights[1] = [
+            self.weight_calculation(n, self.func_g1) for n in range(best_N + 1)
+        ]
+        weights[2] = [
+            self.weight_calculation(n, self.func_g2) for n in range(best_N + 1)
+        ]
+        weights[3] = [
+            self.weight_calculation(n, self.func_g3) for n in range(best_N + 1)
+        ]
 
         integral_N = np.array([self.calculate_I_N(weights[i]) for i in range(4)])
 
         c = self.coefficients()
 
-        f = sum(ci * wi[0] for ci, wi in zip(c, weights))
-
+        f = sum(ci * wi[0] for ci, wi in zip(c, weights, strict=False))
 
         if self.sigma1 < self.sigma2:
             B = A - self.sigma1 / 2
@@ -1081,21 +1171,26 @@ class HermiteApproximation:
                     k = x0 + B * self.sigma1 / 2 + self.var1 / 8
                 else:
                     k = np.log(self.kappa)
-                    if (B ** 2 - 2 * (x0 - k)) >= 0:
-                        iv01 = (-B + np.sqrt(B ** 2 - 2 * (x0 - k))) / np.sqrt(self.T)
-                        iv02 = (-B - np.sqrt(B ** 2 - 2 * (x0 - k))) / np.sqrt(self.T)
+                    if (B**2 - 2 * (x0 - k)) >= 0:
+                        iv01 = (-B + np.sqrt(B**2 - 2 * (x0 - k))) / np.sqrt(self.T)
+                        iv02 = (-B - np.sqrt(B**2 - 2 * (x0 - k))) / np.sqrt(self.T)
                         conditions = [
                             (iv01 < 0) & (iv02 < 0),
                             (iv01 >= 0) & (iv02 < 0),
-                            (iv01 < 0) & (iv02 >= 0)
+                            (iv01 < 0) & (iv02 >= 0),
                         ]
                         choices = [np.nan, iv01, iv02]
                         iv0 = np.select(conditions, choices, np.minimum(iv01, iv02))
                         if np.isnan(iv0):
-                            raise ValueError("The zeroth-order implied volatility is less than 0"
-                                             ", this method is not applicable.")
+                            raise ValueError(
+                                "The zeroth-order implied volatility is less than 0"
+                                ", this method is not applicable."
+                            )
                     else:
-                        raise ValueError("The discriminant is less than 0, this method is not applicable.")
+                        raise ValueError(
+                            "The discriminant is less than 0, this method is not "
+                            "applicable."
+                        )
         else:
             B = A - self.sigma2 / 2
             if type == 1:
@@ -1109,21 +1204,26 @@ class HermiteApproximation:
                     k = x0 + B * self.sigma2 / 2 + self.var2 / 8
                 else:
                     k = np.log(self.kappa)
-                    if (B ** 2 - 2 * (x0 - k)) >= 0:
-                        iv01 = (-B + np.sqrt(B ** 2 - 2 * (x0 - k))) / np.sqrt(self.T)
-                        iv02 = (-B - np.sqrt(B ** 2 - 2 * (x0 - k))) / np.sqrt(self.T)
+                    if (B**2 - 2 * (x0 - k)) >= 0:
+                        iv01 = (-B + np.sqrt(B**2 - 2 * (x0 - k))) / np.sqrt(self.T)
+                        iv02 = (-B - np.sqrt(B**2 - 2 * (x0 - k))) / np.sqrt(self.T)
                         conditions = [
                             (iv01 < 0) & (iv02 < 0),
                             (iv01 >= 0) & (iv02 < 0),
-                            (iv01 < 0) & (iv02 >= 0)
+                            (iv01 < 0) & (iv02 >= 0),
                         ]
                         choices = [np.nan, iv01, iv02]
                         iv0 = np.select(conditions, choices, np.minimum(iv01, iv02))
                         if np.isnan(iv0):
-                            raise ValueError("The zeroth-order implied volatility is less than 0"
-                                             ", this method is not applicable.")
+                            raise ValueError(
+                                "The zeroth-order implied volatility is less than 0"
+                                ", this method is not applicable."
+                            )
                     else:
-                        raise ValueError("The discriminant is less than 0, this method is not applicable.")
+                        raise ValueError(
+                            "The discriminant is less than 0, this method is "
+                            "not applicable."
+                        )
 
         vega = np.exp(x0) * np.sqrt(self.T) * norm.pdf(B)
 
@@ -1132,7 +1232,9 @@ class HermiteApproximation:
         elif type == 2:
             extra_term = (np.exp(k) - self.kappa) * norm.cdf(-A)
         else:
-            extra_term = self.kappa * (norm.cdf(-B - iv0 * np.sqrt(self.T)) - norm.cdf(-A))
+            extra_term = self.kappa * (
+                norm.cdf(-B - iv0 * np.sqrt(self.T)) - norm.cdf(-A)
+            )
 
         v1 = np.sum(c[0] * integral_N[0][1:])
         v2 = np.sum(c[1] * integral_N[1][1:])
@@ -1141,16 +1243,25 @@ class HermiteApproximation:
 
         m = x0 - k
 
-        m1 = m ** 2 / (iv0 ** 3 * self.T) - iv0 * self.T / 4
-        m2 = m1 ** 2 - 3 * m ** 2 / (iv0 ** 4 * self.T) - self.T / 4
-        m3 = m1 ** 3 - 9 * m ** 4 / (iv0 ** 7 * self.T ** 2) + \
-             3 * m ** 2 / (2 * iv0 ** 3) + 12 * m ** 2 / (iv0 ** 5 * self.T) + \
-             3 * iv0 * self.T ** 2 / 16
+        m1 = m**2 / (iv0**3 * self.T) - iv0 * self.T / 4
+        m2 = m1**2 - 3 * m**2 / (iv0**4 * self.T) - self.T / 4
+        m3 = (
+            m1**3
+            - 9 * m**4 / (iv0**7 * self.T**2)
+            + 3 * m**2 / (2 * iv0**3)
+            + 12 * m**2 / (iv0**5 * self.T)
+            + 3 * iv0 * self.T**2 / 16
+        )
 
         iv1 = (v1 + v2) / vega
-        iv2 = (v3 + v4) / vega - 0.5 * iv1 ** 2 * m1
-        iv3 = (v3 + v4) / vega - iv1 * iv2 * m1 - 1 / 6 * iv1 ** 3 * m2
-        iv4 = v4 / vega - (iv1 * iv3 + 0.5 * iv2 ** 2) * m1 - 0.5 * iv1 ** 2 * iv2 * m2 - 1 / 24 * iv1 ** 4 * m3
+        iv2 = (v3 + v4) / vega - 0.5 * iv1**2 * m1
+        iv3 = (v3 + v4) / vega - iv1 * iv2 * m1 - 1 / 6 * iv1**3 * m2
+        iv4 = (
+            v4 / vega
+            - (iv1 * iv3 + 0.5 * iv2**2) * m1
+            - 0.5 * iv1**2 * iv2 * m2
+            - 1 / 24 * iv1**4 * m3
+        )
 
         iv = iv0 + iv1 + iv2
         iv_e = iv0 + iv1 + iv2 + iv3 + iv4
@@ -1159,9 +1270,11 @@ class HermiteApproximation:
 
     def implied_vol_bell_polynomial_e(self, best_N, type):
         """
-        Compute the implied volatility using the implied volatility theorem with the Bell polynomial version of the Faa di Bruno's formula.
+        Compute the implied volatility using the implied volatility theorem with the
+        Bell polynomial version of the Faa di Bruno's formula.
         :param best_N: int
-                       The optimal order N for the Hermite approximation to use for call/put options.
+                       The optimal order N for the Hermite approximation to use for
+                       call/put options.
         :param type: int
                      The expansion type: 1 for Method 1,
                                          2 for Method 2,
@@ -1170,24 +1283,32 @@ class HermiteApproximation:
 
         best_N = 4
 
-        A = self.d1_finding()
+        A = np.asarray(self.d1_finding())
 
         weights = np.zeros((4, best_N + 1))
-        weights[0] = [self.weight_calculation(n, self.func_g) for n in range(best_N + 1)]
-        weights[1] = [self.weight_calculation(n, self.func_g1) for n in range(best_N + 1)]
-        weights[2] = [self.weight_calculation(n, self.func_g2) for n in range(best_N + 1)]
-        weights[3] = [self.weight_calculation(n, self.func_g3) for n in range(best_N + 1)]
+        weights[0] = [
+            self.weight_calculation(n, self.func_g) for n in range(best_N + 1)
+        ]
+        weights[1] = [
+            self.weight_calculation(n, self.func_g1) for n in range(best_N + 1)
+        ]
+        weights[2] = [
+            self.weight_calculation(n, self.func_g2) for n in range(best_N + 1)
+        ]
+        weights[3] = [
+            self.weight_calculation(n, self.func_g3) for n in range(best_N + 1)
+        ]
 
         c = self.coefficients()
 
-        f = sum(ci * wi[0] for ci, wi in zip(c, weights))
+        f = sum(ci * wi[0] for ci, wi in zip(c, weights, strict=False))
 
         psi = np.zeros(best_N)
 
         if self.sigma1 < self.sigma2:
             B = A - self.sigma1 / 2
-            for i in range (1, best_N + 1):
-                psi[i-1] = sum(ci * wi[i] for ci, wi in zip(c, weights))
+            for i in range(1, best_N + 1):
+                psi[i - 1] = sum(ci * wi[i] for ci, wi in zip(c, weights, strict=False))
             if type == 1:
                 k = np.log(self.kappa)
                 x0 = k - A * self.sigma1 / 2 + self.var1 / 8
@@ -1199,27 +1320,32 @@ class HermiteApproximation:
                     iv0 = 0.5 * self.sigma1 / np.sqrt(self.T)
                 else:
                     k = np.log(self.kappa)
-                    if (B ** 2 - 2 * (x0 - k)) >= 0:
-                        iv01 = (-B + np.sqrt(B ** 2 - 2 * (x0 - k))) / np.sqrt(self.T)
-                        iv02 = (-B - np.sqrt(B ** 2 - 2 * (x0 - k))) / np.sqrt(self.T)
+                    if (B**2 - 2 * (x0 - k)) >= 0:
+                        iv01 = (-B + np.sqrt(B**2 - 2 * (x0 - k))) / np.sqrt(self.T)
+                        iv02 = (-B - np.sqrt(B**2 - 2 * (x0 - k))) / np.sqrt(self.T)
                         conditions = [
                             (iv01 < 0) & (iv02 < 0),
                             (iv01 >= 0) & (iv02 < 0),
-                            (iv01 < 0) & (iv02 >= 0)
+                            (iv01 < 0) & (iv02 >= 0),
                         ]
                         choices = [np.nan, iv01, iv02]
                         iv0 = np.select(conditions, choices, np.minimum(iv01, iv02))
                         if np.isnan(iv0):
-                            raise ValueError("The zeroth-order implied volatility is less than 0"
-                                             ", this method is not applicable.")
+                            raise ValueError(
+                                "The zeroth-order implied volatility is less than 0"
+                                ", this method is not applicable."
+                            )
                     else:
-                        raise ValueError("The discriminant is less than 0, this method is not applicable.")
+                        raise ValueError(
+                            "The discriminant is less than 0, this method is not "
+                            "applicable."
+                        )
         else:
             B = A - self.sigma2 / 2
             # a = (1 - self.lam) ** 0.5 * np.exp(self.mu2 / 2 + self.var2 / 8)
             # f = a * integral_N[0, 0] / norm.cdf(-B)
             for i in range(1, best_N + 1):
-                psi[i - 1] = sum(ci * wi[i] for ci, wi in zip(c, weights))
+                psi[i - 1] = sum(ci * wi[i] for ci, wi in zip(c, weights, strict=False))
             if type == 1:
                 k = np.log(self.kappa)
                 x0 = k - A * self.sigma2 / 2 + self.var2 / 8
@@ -1231,38 +1357,49 @@ class HermiteApproximation:
                     iv0 = 0.5 * self.sigma2 / np.sqrt(self.T)
                 else:
                     k = np.log(self.kappa)
-                    if (B ** 2 - 2 * (x0 - k)) >= 0:
-                        iv01 = (-B + np.sqrt(B ** 2 - 2 * (x0 - k))) / np.sqrt(self.T)
-                        iv02 = (-B - np.sqrt(B ** 2 - 2 * (x0 - k))) / np.sqrt(self.T)
+                    if (B**2 - 2 * (x0 - k)) >= 0:
+                        iv01 = (-B + np.sqrt(B**2 - 2 * (x0 - k))) / np.sqrt(self.T)
+                        iv02 = (-B - np.sqrt(B**2 - 2 * (x0 - k))) / np.sqrt(self.T)
                         conditions = [
                             (iv01 < 0) & (iv02 < 0),
                             (iv01 >= 0) & (iv02 < 0),
-                            (iv01 < 0) & (iv02 >= 0)
+                            (iv01 < 0) & (iv02 >= 0),
                         ]
                         choices = [np.nan, iv01, iv02]
                         iv0 = np.select(conditions, choices, np.minimum(iv01, iv02))
                         if np.isnan(iv0):
-                            raise ValueError("The zeroth-order implied volatility is less than 0"
-                                             ", this method is not applicable.")
+                            raise ValueError(
+                                "The zeroth-order implied volatility is less than 0"
+                                ", this method is not applicable."
+                            )
                     else:
-                        raise ValueError("The discriminant is less than 0, this method is not applicable.")
+                        raise ValueError(
+                            "The discriminant is less than 0, this method is not "
+                            "applicable."
+                        )
 
         if type == 1:
             extra_term = (f - np.exp(x0)) * norm.cdf(-B)
         elif type == 2:
             extra_term = (np.exp(k) - self.kappa) * norm.cdf(-A)
         else:
-            extra_term = self.kappa * (norm.cdf(-B - iv0 * np.sqrt(self.T)) - norm.cdf(-A))
+            extra_term = self.kappa * (
+                norm.cdf(-B - iv0 * np.sqrt(self.T)) - norm.cdf(-A)
+            )
 
         f = np.exp(x0)
 
         m = x0 - k
 
-        m1 = m ** 2 / (iv0 ** 3 * self.T) - iv0 * self.T / 4
-        m2 = m1 ** 2 - 3 * m ** 2 / (iv0 ** 4 * self.T) - self.T / 4
-        m3 = m1 ** 3 - 9 * m ** 4 / (iv0 ** 7 * self.T ** 2) + \
-             3 * m ** 2 / (2 * iv0 ** 3) + 12 * m ** 2 / (iv0 ** 5 * self.T) + \
-             3 * iv0 * self.T ** 2 / 16
+        m1 = m**2 / (iv0**3 * self.T) - iv0 * self.T / 4
+        m2 = m1**2 - 3 * m**2 / (iv0**4 * self.T) - self.T / 4
+        m3 = (
+            m1**3
+            - 9 * m**4 / (iv0**7 * self.T**2)
+            + 3 * m**2 / (2 * iv0**3)
+            + 12 * m**2 / (iv0**5 * self.T)
+            + 3 * iv0 * self.T**2 / 16
+        )
 
         # iv1 = (psi[0] - psi[1] * iv0 * np.sqrt(self.T) + 2 * psi[2] * (iv0 * np.sqrt(self.T)) ** 2) / (f * iv0 * np.sqrt(self.T))
         # iv2 = (psi[1] - 2 * psi[2] * iv0 * np.sqrt(self.T)) / f * (- m / (iv0 * self.T) + iv0 / 2) - 0.5 * iv1 ** 2 * m1
@@ -1270,13 +1407,16 @@ class HermiteApproximation:
         #       iv1 * iv2 * m1 - 1 / 6 * iv1 ** 3 * m2
 
         iv1 = psi[0] / (f * np.sqrt(self.T)) + psi[1] / (f * np.sqrt(self.T)) * B
-        iv2 = psi[2] / (f * np.sqrt(self.T)) * (B ** 2 - 1) - 0.5 * iv1 ** 2 * m1
-        iv3 = psi[3] / (f * np.sqrt(self.T)) * (B ** 3 - 3 * B) - iv1 * iv2 * m1 - 1 / 6 * iv1 ** 3 * m2
+        iv2 = psi[2] / (f * np.sqrt(self.T)) * (B**2 - 1) - 0.5 * iv1**2 * m1
+        iv3 = (
+            psi[3] / (f * np.sqrt(self.T)) * (B**3 - 3 * B)
+            - iv1 * iv2 * m1
+            - 1 / 6 * iv1**3 * m2
+        )
 
         iv = iv0 + iv1 + iv2 + iv3
 
         return iv
-
 
     def parameters_out(self):
         """
@@ -1286,11 +1426,11 @@ class HermiteApproximation:
         A = self.d1_finding()
 
         parameter = {
-            'mu1': [self.mu1],
-            'mu2': [self.mu2],
-            'sigma1': [self.sigma1],
-            'sigma2': [self.sigma2],
-            'A': [A]
+            "mu1": [self.mu1],
+            "mu2": [self.mu2],
+            "sigma1": [self.sigma1],
+            "sigma2": [self.sigma2],
+            "A": [A],
         }
         para = pd.DataFrame(parameter)
         print("Parameters: \n", para)
@@ -1303,6 +1443,7 @@ class HermiteApproximation:
 
 # --- Optimal Order of the Hermite Expansion ---
 
+
 class optimal_N:
     """
     Decide the optimal order of the Hermite expansion for the function g.
@@ -1310,7 +1451,8 @@ class optimal_N:
     Parameters
     ----------
     obj : callable
-          The Hermite approximation class, from where we can import the necessary functions.
+          The Hermite approximation class, from where we can import the necessary
+          functions.
     N_max: int
            The maximum order of the Hermite expansion.
     T: float
@@ -1331,7 +1473,9 @@ class optimal_N:
 
         self.phi_plot = norm.pdf(self.y_plot)
 
-        self.all_weights = [obj.weight_calculation(n, obj.func_g) for n in range(N_max + 1)]
+        self.all_weights = [
+            obj.weight_calculation(n, obj.func_g) for n in range(N_max + 1)
+        ]
 
         self.obj = obj
         self.N = N_max
@@ -1343,7 +1487,13 @@ class optimal_N:
         """
 
         if np.any(np.isnan(self.g_y)):
-            return 0, np.full(self.N + 1, np.nan, dtype=float), self.y_eval, self.g_y, [np.nan] * (self.N + 1)
+            return (
+                0,
+                np.full(self.N + 1, np.nan, dtype=float),
+                self.y_eval,
+                self.g_y,
+                [np.nan] * (self.N + 1),
+            )
 
         F_errors = np.empty(self.N + 1, dtype=float)
         F_errors.fill(np.nan)
@@ -1375,12 +1525,11 @@ class optimal_N:
 
         # If no F_errors less than 1e-5 were found, then set best_N to the value
         # that makes the F_errors minimum (if valid errors exist)
-        if not threshold_N:
-            if not np.all(np.isnan(F_errors)):
-                try:
-                    best_N = int(np.nanargmin(F_errors))
-                except ValueError:
-                    pass  # best_N remains 0 if all F_errors are NaN
+        if not threshold_N and not np.all(np.isnan(F_errors)):
+            try:
+                best_N = int(np.nanargmin(F_errors))
+            except ValueError:
+                pass  # best_N remains 0 if all F_errors are NaN
 
         return best_N, F_errors[best_N]
 
@@ -1390,36 +1539,178 @@ class optimal_N:
         """
 
         best_N, F_errors = self.optimization()
-        weights_N = self.all_weights[:best_N + 1]
+        weights_N = self.all_weights[: best_N + 1]
         gN_approx = self.obj.g_approx(self.y_plot, best_N, weights_N)
 
         plt.figure(figsize=(12, 7))
 
         # Plot actual g(y)
-        plt.plot(self.y_plot, self.g_y_plot, label='Actual $g(y)$',
-                 color='blue', linestyle='-', linewidth=2)
+        plt.plot(
+            self.y_plot,
+            self.g_y_plot,
+            label="Actual $g(y)$",
+            color="blue",
+            linestyle="-",
+            linewidth=2,
+        )
 
         # Plot Hermite approximation
         if np.any(np.isnan(gN_approx)):
-            # print(f"Warning: Hermite Approximated g(y) for N*={N_optimal} contains NaN values.")
-            plt.plot(self.y_plot, gN_approx, label=f'Hermite Approx. $g(y)$ (N={best_N}, NaN present)',
-                     color='red', linestyle='--')
+            # print(f"Warning: Hermite Approximated g(y) for N*={N_optimal}
+            # contains NaN values.")
+            plt.plot(
+                self.y_plot,
+                gN_approx,
+                label=f"Hermite Approx. $g(y)$ (N={best_N}, NaN present)",
+                color="red",
+                linestyle="--",
+            )
         else:
-            plt.plot(self.y_plot, gN_approx, label=f'Hermite Approx. $g(y)$ (N={best_N})',
-                     color='red', linestyle='--')
+            plt.plot(
+                self.y_plot,
+                gN_approx,
+                label=f"Hermite Approx. $g(y)$ (N={best_N})",
+                color="red",
+                linestyle="--",
+            )
 
-        plt.title(f'Actual vs. Approximated $g(y)$ for T = {self.T:.4f}')
-        plt.xlabel('$y$')
-        plt.ylabel('$g(y)$')
+        plt.title(f"Actual vs. Approximated $g(y)$ for T = {self.T:.4f}")
+        plt.xlabel("$y$")
+        plt.ylabel("$g(y)$")
         plt.legend()
-        plt.grid(True, linestyle='--', alpha=0.7)
+        plt.grid(True, linestyle="--", alpha=0.7)
         plt.ylim(bottom=0)
-        plt.axhline(0, color='black', linewidth=0.5)
-        plt.axvline(0, color='black', linewidth=0.5)
+        plt.axhline(0, color="black", linewidth=0.5)
+        plt.axvline(0, color="black", linewidth=0.5)
         plt.show()
 
 
+# --- One Dimensional Gauss-Hermite Quadrature Method---
+
+
+def gauss_hermite_approx(N_gauss, kappa, model, p):
+    """
+    Compute the VIX derivative price using one dimensional Gauss-Hermite quadrature
+    method.
+
+    Parameters
+    ----------
+    N_gauss : int
+        Number of nodes for the Gauss-Hermite quadrature.
+    kappa : float
+        The strike price of the VIX call/put.
+    model : object
+        The instance of a Bergomi model, mixed Bergomi model or mixed rough Bergomi
+        model.
+    p : int
+        The payoff type: 1 for calls, 0 for futures, others for puts.
+
+    Returns
+    -------
+    float
+        The VIX derivative price.
+    """
+    mu1, mu2 = model.mean()
+    sigma1, sigma2 = np.sqrt(model.variance())
+    lam = model.lam
+    X0 = model.X0
+    T = model.T
+    Delta = model.Delta
+
+    nodes, weights = roots_hermite(N_gauss)
+
+    # Change of variable: let z = sqrt(2)*x so that the expectation becomes
+    # E[f(Z)] = 1/sqrt(pi) * \int_{-\infty}^{\infty} f(sqrt(2)*x) e^{-x^2} dx.
+    z = np.sqrt(2) * nodes
+    weights_trans = weights / np.sqrt(np.pi)
+
+    F = lam * np.exp(mu1 + sigma1 * z) + (1 - lam) * np.exp(mu2 + sigma2 * z)
+
+    if p == 1:
+        payoff = np.maximum(np.sqrt(F) - kappa, 0)
+    elif p == 0:
+        payoff = np.sqrt(F)
+    else:
+        payoff = np.maximum(kappa - np.sqrt(F), 0)
+
+    # The main term in the weak VIX derivative price approximation
+    main = np.sum(weights_trans * payoff)
+
+    # First order derivative of the payoff function
+    def payoff_func(x):
+        if p == 1:
+            return np.where(x > kappa**2, 1 / (2 * np.sqrt(x)), 0)
+        elif p == 0:
+            return 1 / (2 * np.sqrt(x))
+        else:
+            return np.where(x < kappa**2, -1 / (2 * np.sqrt(x)), 0)
+
+    # If the input instance is the mixed rough Bergomi model
+    if isinstance(model, MixedRoughBergomi):
+        vol1, vol2 = model.eta
+        H = model.H
+        term0 = 2 * H + 1
+        term1 = (T + Delta) ** term0 - Delta**term0 - T**term0
+        term2 = 2 * Delta * H * term0
+        integral = term1 / term2
+    else:
+        vol1, vol2 = model.omega
+        k = model.k
+        term1 = 1 / (4 * k**2 * Delta)
+        term2 = 1 - np.exp(-2 * k * T)
+        term3 = 1 - np.exp(-2 * k * Delta)
+        integral = term1 * term2 * term3
+
+    term01 = lam * np.exp(mu1 + sigma1 * z)
+    if vol1 == 0:
+        term11 = (1 - lam) * np.exp(mu2 + sigma2 * z)
+    else:
+        term11 = (1 - lam) * np.exp(
+            vol2 / 2 * (vol1 - vol2) * integral
+            + (1 - vol2 / vol1) * X0
+            + vol2 / vol1 * (mu1 + sigma1 * z)
+        )
+    psi1 = payoff_func(term01 + term11) * term01
+
+    if vol2 == 0:
+        term02 = lam * np.exp(mu1 + sigma1 * z)
+    else:
+        term02 = lam * np.exp(
+            vol1 / 2 * (vol2 - vol1) * integral
+            + (1 - vol1 / vol2) * X0
+            + vol1 / vol2 * (mu2 + sigma2 * z)
+        )
+    term12 = (1 - lam) * np.exp(mu2 + sigma2 * z)
+    psi2 = payoff_func(term02 + term12) * term12
+
+    # Correction terms Pi,1
+    p1 = np.zeros(3)
+
+    p1[0] = np.sum(weights_trans * psi1)
+    p1[1] = 1 / sigma1 * np.sum(weights_trans * z * psi1)
+    p1[2] = 1 / sigma1**2 * np.sum(weights_trans * (z**2 - 1) * psi1)
+
+    # Correction terms Pi,2
+    p2 = np.zeros(3)
+
+    p2[0] = np.sum(weights_trans * psi2)
+    p2[1] = 1 / sigma2 * np.sum(weights_trans * z * psi2)
+    p2[2] = 1 / sigma2**2 * np.sum(weights_trans * (z**2 - 1) * psi2)
+
+    gamma = model.coefficients()
+
+    if vol1 == 0:
+        price = main + np.sum(gamma[:, 1] * p2)
+    elif vol2 == 0:
+        price = main + np.sum(gamma[:, 0] * p1)
+    else:
+        price = main + np.sum(gamma[:, 0] * p1) + np.sum(gamma[:, 1] * p2)
+
+    return price
+
+
 # --- Implied Volatility ---
+
 
 def implied_vol(x, y, T, market):
     """
@@ -1438,7 +1729,8 @@ def implied_vol(x, y, T, market):
 
     def objective(z):
         """
-        The objective function of the root-finding method construct using the BS call price function.
+        The objective function of the root-finding method construct using the
+        Black-Scholes call price function.
 
         :param z: float
                   The volatility in the Black-Scholes price function.
@@ -1459,109 +1751,6 @@ def implied_vol(x, y, T, market):
 
 # --- VIX Derivative Price Approximation ---
 
-def rel_error(approx, reference):
-    """
-    Compute the relative error between the approximation and the reference value.
-    :param approx: np.ndarray
-                   The array of approximate values.
-    :param reference: np.ndarray
-                      The array of reference values.
-    """
-
-    error = np.abs(approx - reference) / np.abs(reference) * 100
-    # error = np.char.add(np.char.mod("%0.7f", error), "%")
-    return error
-
-def plot_approx(approx, reference, kappa_list, type):
-    """
-    Plot the Hermite approximation results with the reference value.
-
-    :param approx: np.ndarray
-                   The results computed by Hermite approximation.
-    :param reference: np.ndarray
-                      The reference values.
-    :param kappa_list: list
-                       The values of different strike prices.
-    :param type: str
-                 The type of approximations. (e.g. call/put price, implied volatility)
-    """
-
-    rel_errors = np.zeros_like(approx)
-    rel_errors[0] = rel_error(approx[0], reference[0])
-    rel_errors[1] = rel_error(approx[1], reference[1])
-    rel_errors[2] = rel_error(approx[2], reference[2])
-
-    fig, axs = plt.subplots(1, 2, figsize=(10, 5))
-    #
-    axs[0].plot(kappa_list, reference[0], 'b.', label='ref. 1M')
-    axs[0].plot(kappa_list, reference[1], 'g+', label='ref. 3M')
-    axs[0].plot(kappa_list, reference[2], 'rx', label='ref. 6M')
-
-    axs[0].plot(kappa_list, approx[0], 'b:', label='approx. 1M')
-    axs[0].plot(kappa_list, approx[1], 'g--', label='approx. 3M')
-    axs[0].plot(kappa_list, approx[2], 'r-.', label='approx. 6M')
-
-    axs[0].set_xlabel("Strike price")
-    axs[0].set_ylabel(type)
-
-    axs[0].legend(
-        # loc='upper right',
-        ncol=2,
-        frameon=True,
-    )
-    axs[0].grid(True)
-
-    axs[1].plot(kappa_list, rel_errors[0], 'b.:', label='1M')
-    axs[1].plot(kappa_list, rel_errors[1], 'g+--', label='3M')
-    axs[1].plot(kappa_list, rel_errors[2], 'rx-.', label='6M')
-    axs[1].set_xlabel("Strike price")
-    axs[1].set_ylabel("Relative error (%)")
-    axs[1].legend(
-        # loc='upper right',
-        ncol=3,
-        frameon=True,
-    )
-    axs[1].grid(True)
-
-    plt.tight_layout()
-
-    # Save the plot as a file
-    # output_file = "vix_implied_vol_plot with different strike price_b.png"
-    # plt.savefig(output_file, dpi=300)
-    plt.show()
-
-def print_approx(approx, reference, kappa_list):
-    """
-    Print the results of Hermite approximations and its relative errors.
-
-    :param approx: np.ndarray
-                   The results computed by Hermite approximation.
-    :param reference: np.ndarray
-                      The reference value.
-    :param kappa_list: list
-                       The values of different strike prices.
-    """
-
-    rel_errors = np.zeros_like(approx)
-
-    rel_errors[0] = rel_error(approx[0], reference[0])
-    rel_errors[1] = rel_error(approx[1], reference[1])
-    rel_errors[2] = rel_error(approx[2], reference[2])
-
-    for i in range(len(rel_errors)):
-        results = {
-            "Strike price": kappa_list,
-            "Quadrature": reference[i],
-            "Hermite": approx[i],
-            "Rel. error": rel_errors[i],
-        }
-        results = pd.DataFrame(results)
-        results.index = pd.Index(range(1, len(results) + 1))
-
-        pd.set_option('display.max_rows', None)
-        pd.set_option('display.max_columns', None)
-
-        print("Numerical results: \n", results)
 
 def main_mb():
     """
@@ -1569,7 +1758,7 @@ def main_mb():
     """
 
     k = 1
-    X0 = np.log(0.2 ** 2)
+    X0 = np.log(0.2**2)
     T = [1.0 / 12.0, 3.0 / 12.0, 6.0 / 12.0]
     Delta = 1.0 / 12.0
     kappa_list = np.linspace(0.1, 0.4, 10)
@@ -1602,7 +1791,6 @@ def main_mb():
     j = 0
 
     for t in T:
-
         print(f"Processing for T = {t:.4f}.")
 
         para = [omega1, omega2, lam, k, X0, t, Delta]
@@ -1619,13 +1807,32 @@ def main_mb():
         print(f"\nThe sum of the squared error, Errors = {F_error}.")
 
         futures_gauss_hermite = gauss_hermite_approx(N_gauss, kappa_list[0], mb, p=0)
-        futures_hermite = HermiteApproximation(kappa_list[0], mb, p=0).vix_derivative_price(best_N)
+        futures_hermite = HermiteApproximation(
+            kappa_list[0], mb, p=0
+        ).vix_derivative_price(best_N)
 
-        call_ref[j] = np.array([gauss_hermite_approx(N_gauss, kappa, mb, p=1) for kappa in kappa_list])
-        call_approx[j] = np.array([HermiteApproximation(kappa, mb, p=1).vix_derivative_price(best_N) for kappa in kappa_list])
+        call_ref[j] = np.array(
+            [gauss_hermite_approx(N_gauss, kappa, mb, p=1) for kappa in kappa_list]
+        )
+        call_approx[j] = np.array(
+            [
+                HermiteApproximation(kappa, mb, p=1).vix_derivative_price(best_N)
+                for kappa in kappa_list
+            ]
+        )
 
-        iv_ref[j] = np.array([implied_vol(futures_hermite, kappa_list[i], t, call_approx[j, i]) for i in range(len(kappa_list))])
-        iv_approx[j] = np.array([HermiteApproximation(kappa, mb, p=1).implied_vol_taylor(best_N, 2)[0] for kappa in kappa_list])
+        iv_ref[j] = np.array(
+            [
+                implied_vol(futures_hermite, kappa_list[i], t, call_approx[j, i])
+                for i in range(len(kappa_list))
+            ]
+        )
+        iv_approx[j] = np.array(
+            [
+                HermiteApproximation(kappa, mb, p=1).implied_vol_taylor(best_N, 2)[0]
+                for kappa in kappa_list
+            ]
+        )
 
         # iv_approx[j] = np.array([HermiteApproximation(kappa, mb, p=1).implied_vol_bell_polynomial_e(best_N, 2) for kappa in kappa_list])
 
@@ -1641,11 +1848,12 @@ def main_mb():
 
 def main_mrb():
     """
-    Main function to define the mixed rough Bergomi model scenarios and trigger the analysis.
+    Main function to define the mixed rough Bergomi model scenarios and trigger
+    the analysis.
     """
 
     H = 0.1
-    X0 = np.log(0.235 ** 2)
+    X0 = np.log(0.235**2)
     T = [1.0 / 12.0, 3.0 / 12.0, 6.0 / 12.0]
     Delta = 1.0 / 12.0
     kappa_list = np.linspace(0.1, 0.4, 10)
@@ -1676,7 +1884,6 @@ def main_mrb():
     j = 0
 
     for t in T:
-
         print(f"Processing for T = {t:.4f}.")
 
         para = [eta1, eta2, lam, H, X0, t, Delta]
@@ -1694,17 +1901,49 @@ def main_mrb():
         print(f"\nThe sum of the squared error, Errors = {F_error}.")
 
         futures_gauss_hermite = gauss_hermite_approx(N_gauss, kappa_list[0], mrb, p=0)
-        futures_hermite = HermiteApproximation(kappa_list[0], mrb, p=0).vix_derivative_price(best_N)
+        futures_hermite = HermiteApproximation(
+            kappa_list[0], mrb, p=0
+        ).vix_derivative_price(best_N)
 
-        call_ref[j] = np.array([gauss_hermite_approx(N_gauss, kappa, mrb, p=1) for kappa in kappa_list])
-        call_approx[j] = np.array([HermiteApproximation(kappa, mrb, p=1).vix_derivative_price(best_N) for kappa in kappa_list])
+        call_ref[j] = np.array(
+            [gauss_hermite_approx(N_gauss, kappa, mrb, p=1) for kappa in kappa_list]
+        )
+        call_approx[j] = np.array(
+            [
+                HermiteApproximation(kappa, mrb, p=1).vix_derivative_price(best_N)
+                for kappa in kappa_list
+            ]
+        )
 
-        iv_ref[j] = np.array([implied_vol(futures_gauss_hermite, kappa_list[i], t, call_ref[j, i]) for i in range(len(kappa_list))])
-        # iv_approx[j] = np.array([HermiteApproximation(kappa, mrb, p=1).implied_vol_taylor(best_N, 2)[0] for kappa in kappa_list])
+        iv_ref[j] = np.array(
+            [
+                implied_vol(futures_gauss_hermite, kappa_list[i], t, call_ref[j, i])
+                for i in range(len(kappa_list))
+            ]
+        )
+        # iv_approx[j] = np.array(
+        #     [
+        #         HermiteApproximation(kappa, mrb, p=1).implied_vol_taylor(best_N, 2)[0]
+        #         for kappa in kappa_list
+        #     ]
+        # )
 
-        # iv_approx[j] = np.array([HermiteApproximation(kappa, mrb, p=1).implied_vol_bell_polynomial(best_N, 2)[0] for kappa in kappa_list])
-        iv_approx[j] = np.array([HermiteApproximation(kappa, mrb, p=1).implied_vol_bell_polynomial_e(best_N, 2) for kappa in kappa_list])
-
+        # iv_approx[j] = np.array(
+        #     [
+        #         HermiteApproximation(kappa, mrb, p=1).implied_vol_bell_polynomial(
+        #             best_N, 2
+        #         )[0]
+        #         for kappa in kappa_list
+        #     ]
+        # )
+        iv_approx[j] = np.array(
+            [
+                HermiteApproximation(kappa, mrb, p=1).implied_vol_bell_polynomial_e(
+                    best_N, 2
+                )
+                for kappa in kappa_list
+            ]
+        )
 
         j += 1
 
@@ -1718,6 +1957,6 @@ def main_mrb():
     plot_approx(iv_approx, iv_ref, kappa_list, "Implied volatility")
     # print(iv_approx, iv_ref, kappa_list)
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     main_mrb()
